@@ -1,0 +1,76 @@
+resources:
+- name: {{ env["deployment"] }}
+  {% if properties["apiVersion"] == "v1beta1" %}
+  type: gcp-types/container-v1beta1:projects.locations.clusters
+  {% else %}
+  type: gcp-types/container-v1:projects.zones.clusters
+  {% endif %}
+  properties:
+    {% if properties["apiVersion"] == "v1beta1" %}
+    parent: projects/{{ env["project"] }}/locations/{{ properties["location"] }}
+    {% else %}
+    zone: {{ properties["zone"] }}
+    {% endif %}
+    cluster:
+      {% if properties["monitoringService"] %}
+      monitoringService: {{ properties["monitoringService"] }}
+      {% endif %}
+      {% if properties["httpLoadBalancing"] is defined %}
+      addonsConfig:
+        httpLoadBalancing:
+          disabled: {{ not properties["httpLoadBalancing"] }}
+      {% endif %}
+      {% if properties["locations"] %}
+      locations: {{ properties["locations"].split(",") }}
+      {% endif %}
+      {% if properties["currentMasterVersion"] %}
+      currentMasterVersion: {{ properties["currentMasterVersion"] }}
+      {% endif %}
+      {% if properties["initialClusterVersion"] %}
+      initialClusterVersion: {{ properties["initialClusterVersion"] }}
+      {% endif %}
+      {% if properties["maintenanceWindowDuration"] %}
+      maintenancePolicy:
+        window:
+          dailyMaintenanceWindow:
+            startTime: 00:00
+            duration: {{ properties["maintenanceWindowDuration"] }}
+      {% endif %}
+      nodePools:
+      - name: {{ env["deployment"] }}np
+        config:
+          machineType: g1-small
+          diskSizeGb: 10
+          oauthScopes:
+          - https://www.googleapis.com/auth/devstorage.read_only
+          imageType: {{ properties["imageType"] }}
+        {% if properties["nodeVersion"] %}
+        version: {{ properties["nodeVersion"] }}
+        {% endif %}
+        initialNodeCount: 1
+        autoscaling:
+          enabled: {{ properties["autoscaling"] }}
+          {% if properties["autoscaling"] %}
+          minNodeCount: 0
+          maxNodeCount: 2
+          {% endif %}
+        management:
+          autoUpgrade: {{ properties["autoUpgrade"] }}
+          autoRepair: {{ properties["autoRepair"] }}
+- name: {{ env["deployment"] }}-gke-type
+  type: gcp-types/deploymentmanager-v2beta:typeProviders
+  properties:
+    descriptorUrl: https://$(ref.{{ env["deployment"] }}.endpoint)/openapi/v2
+    options:
+      validationOptions:
+        schemaValidation: IGNORE_WITH_WARNINGS
+      inputMappings:
+      - fieldName: Authorization
+        location: HEADER
+        value: >
+          $.concat("Bearer ", $.googleOauth2AccessToken())
+    customCertificateAuthorityRoots:
+    - $(ref.{{env["deployment"]}}.masterAuth.clusterCaCertificate)
+outputs:
+- name: endpoint
+  value: "$(ref.{{ env["deployment"] }}.endpoint)"

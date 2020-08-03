@@ -1,0 +1,12 @@
+resources:
+- name: {{ properties['name'] }}-ns
+  type: {{ env['project'] }}/{{ properties['clusterType'] }}:{{ '/api/v1/namespaces/{name}' }}
+  properties:
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: {{ properties['name'] }}-ns
+
+outputs:
+- name: name
+  value: {{ properties['name'] }}-ns

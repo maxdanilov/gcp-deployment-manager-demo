@@ -1,0 +1,25 @@
+imports:
+  - path: gke_provider_cluster.jinja
+  - path: replication_controller.jinja
+  - path: namespace.jinja
+
+resources:
+- name: cluster
+  #type: gs://<some-gcp-bucket>/gke_provider_cluster.jinja
+  type: gke_provider_cluster.jinja
+  properties:
+    zone: europe-west1-b
+    autoscaling: True
+- name: namespace
+  type: namespace.jinja
+  properties:
+    name: meh2
+    clusterType: k8s-test-gke-type
+- name: controller
+  type: replication_controller.jinja
+  properties:
+    name: wazzup
+    namespace: "$(ref.namespace.name)"
+    image: gcr.io/deployment-manager-examples/nodejsservicestatic
+    port: 8080
+    clusterType: k8s-test-gke-type

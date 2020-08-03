@@ -1,0 +1,21 @@
+resources:
+- name: {{ properties['name'] }}-rc
+  type: {{ env['project'] }}/{{ properties['clusterType'] }}:{{ '/api/v1/namespaces/{namespace}/replicationcontrollers/{name}' }}
+  properties:
+    apiVersion: v1
+    kind: ReplicationController
+    namespace: {{ properties['namespace'] }}
+    metadata:
+      name: {{ properties['name'] }}-rc
+    spec:
+      replicas: 2
+      template:
+        metadata:
+          labels:
+            name: {{ properties['name'] }}-rc
+        spec:
+          containers:
+          - name: container
+            image: {{ properties['image'] }}
+            ports:
+            - containerPort: {{ properties['port'] }}
